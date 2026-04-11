@@ -262,7 +262,7 @@
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Inbox"/>
-                        <TextBlock Text="{Binding UnreadBadge}" Foreground="#E53935" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding UnreadBadge, Mode=OneWay}" Foreground="#E53935" FontWeight="Bold"/>
                     </StackPanel>
                 </TabItem.Header>
 
@@ -286,7 +286,7 @@
                                 <TextBlock Style="{StaticResource SectionHead}"
                                            VerticalAlignment="Center" Margin="0">
                                     <Run Text="Messages"/>
-                                    <Run Text="{Binding UnreadBadge}" Foreground="#E53935"/>
+                                    <Run Text="{Binding UnreadBadge, Mode=OneWay}" Foreground="#E53935"/>
                                 </TextBlock>
                                 <Button Content="🔄" Style="{StaticResource SecondaryBtn}"
                                         Command="{Binding ConnectEmailCommand}"

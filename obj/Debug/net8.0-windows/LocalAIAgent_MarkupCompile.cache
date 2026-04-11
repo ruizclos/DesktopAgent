@@ -1,5 +1,5 @@
 ﻿LocalAIAgent
-1.0.0.0
+
 
 winexe
 C#
@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR
 C:\Users\ruizc\Documents\GitHub\DesktopAgent\App.xaml
 3-540392295
 
-24937559584
+22986168315
 2421899803203
 MainWindow.xaml;Themes\FluentTheme.xaml;Views\AppointmentDialog.xaml;
 
-True
+False
 

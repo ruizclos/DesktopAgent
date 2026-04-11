@@ -53,7 +53,7 @@ namespace LocalAIAgent.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/LocalAIAgent;V1.0.0.0;component/views/appointmentdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/LocalAIAgent;component/views/appointmentdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\AppointmentDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

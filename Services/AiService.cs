@@ -24,36 +24,81 @@ namespace LocalAIAgent.Services
         private record ChatResponse(ChatChoice[] choices);
         private record ChatChoice(ChatMessage message);
 
+        private static bool IsGeminiEndpoint(string url) =>
+            url.Contains("generativelanguage.googleapis.com", StringComparison.OrdinalIgnoreCase);
+
         private async Task<string> SendAsync(string prompt)
         {
             if (string.IsNullOrWhiteSpace(_config.Config.ApiKey))
-                throw new Exception("API key is missing.");
+                throw new Exception("API key is missing. Enter it in the AI tab.");
 
-            var request = new ChatRequest(
-                model: _config.Config.AiModel,
-                messages: new[]
-                {
-                    new ChatMessage("system", _config.Config.AiSystemPrompt),
-                    new ChatMessage("user", prompt)
-                },
-                max_tokens: _config.Config.AiMaxTokens
-            );
-
-            var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var endpoint = _config.Config.AiEndpoint;
 
             _http.DefaultRequestHeaders.Clear();
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _config.Config.ApiKey);
 
-            var response = await _http.PostAsync(_config.Config.AiEndpoint, content);
+            string json;
+            string url;
+
+            if (IsGeminiEndpoint(endpoint))
+            {
+                // Gemini REST format — key goes as query param, different body schema
+                url = endpoint.Contains("?")
+                    ? $"{endpoint}&key={_config.Config.ApiKey}"
+                    : $"{endpoint}?key={_config.Config.ApiKey}";
+
+                var geminiRequest = new
+                {
+                    contents = new[]
+                    {
+                        new { parts = new[] { new { text = _config.Config.AiSystemPrompt + "\n\n" + prompt } } }
+                    },
+                    generationConfig = new { maxOutputTokens = _config.Config.AiMaxTokens }
+                };
+                json = JsonSerializer.Serialize(geminiRequest);
+            }
+            else
+            {
+                // OpenAI-compatible format (OpenAI, Azure, local Ollama, etc.)
+                url = endpoint;
+                _http.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", _config.Config.ApiKey);
+
+                var openAiRequest = new ChatRequest(
+                    model: _config.Config.AiModel,
+                    messages: new[]
+                    {
+                        new ChatMessage("system", _config.Config.AiSystemPrompt),
+                        new ChatMessage("user", prompt)
+                    },
+                    max_tokens: _config.Config.AiMaxTokens
+                );
+                json = JsonSerializer.Serialize(openAiRequest);
+            }
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _http.PostAsync(url, content);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
-                throw new Exception($"AI Error: {body}");
+                throw new Exception($"AI Error ({(int)response.StatusCode}): {body}");
 
-            var parsed = JsonSerializer.Deserialize<ChatResponse>(body);
-            return parsed?.choices?[0]?.message?.content ?? "";
+            if (IsGeminiEndpoint(endpoint))
+            {
+                // Parse Gemini response: candidates[0].content.parts[0].text
+                using var doc = JsonDocument.Parse(body);
+                var text = doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+                return text ?? "";
+            }
+            else
+            {
+                var parsed = JsonSerializer.Deserialize<ChatResponse>(body);
+                return parsed?.choices?[0]?.message?.content ?? "";
+            }
         }
 
         // -------------------------
