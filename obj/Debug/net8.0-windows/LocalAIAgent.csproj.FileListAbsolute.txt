@@ -5,3 +5,4 @@ C:\Users\ruizc\Documents\GitHub\DesktopAgent\obj\Debug\net8.0-windows\Views\Appo
 C:\Users\ruizc\Documents\GitHub\DesktopAgent\obj\Debug\net8.0-windows\App.g.cs
 C:\Users\ruizc\Documents\GitHub\DesktopAgent\obj\Debug\net8.0-windows\LocalAIAgent_MarkupCompile.cache
 C:\Users\ruizc\Documents\GitHub\DesktopAgent\obj\Debug\net8.0-windows\LocalAIAgent_MarkupCompile.lref
+C:\Users\ruizc\Documents\GitHub\DesktopAgent\obj\Debug\net8.0-windows\Themes\FluentTheme.baml

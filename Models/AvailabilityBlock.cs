@@ -1,3 +1,4 @@
+using System;
 namespace LocalAIAgent.Models
 {
     public class AvailabilityBlock
