@@ -177,17 +177,13 @@
                             </Grid.RowDefinitions>
                             <TextBlock Text="Actions" Style="{StaticResource SectionHead}"/>
                             <WrapPanel Grid.Row="1">
-                                <Button Content="Connect Email"
+                                <Button Content="🔄 Refresh Inbox"
                                         Style="{StaticResource PrimaryBtn}"
                                         Command="{Binding ConnectEmailCommand}"
                                         Margin="0,0,8,6"/>
                                 <Button Content="Summarize PDF"
                                         Style="{StaticResource PrimaryBtn}"
                                         Command="{Binding SummarizePdfCommand}"
-                                        Margin="0,0,8,6"/>
-                                <Button Content="Generate Reply"
-                                        Style="{StaticResource SecondaryBtn}"
-                                        Command="{Binding GenerateReplyCommand}"
                                         Margin="0,0,8,6"/>
                                 <Button Content="Daily Report"
                                         Style="{StaticResource SecondaryBtn}"
@@ -260,9 +256,202 @@
             </TabItem>
 
             <!-- ═══════════════════════════════════════════════
-                 EMAIL TAB
+                 INBOX TAB
             ═══════════════════════════════════════════════ -->
-            <TabItem Header="Email">
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Inbox"/>
+                        <TextBlock Text="{Binding UnreadBadge}" Foreground="#E53935" FontWeight="Bold"/>
+                    </StackPanel>
+                </TabItem.Header>
+
+                <Grid Margin="2">
+                    <Grid.ColumnDefinitions>
+                        <!-- message list -->
+                        <ColumnDefinition Width="300" MinWidth="200"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ── LEFT: message list ── -->
+                    <Border Style="{StaticResource Card}" Grid.Column="0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Margin="0,0,0,6">
+                                <TextBlock Style="{StaticResource SectionHead}"
+                                           VerticalAlignment="Center" Margin="0">
+                                    <Run Text="Messages"/>
+                                    <Run Text="{Binding UnreadBadge}" Foreground="#E53935"/>
+                                </TextBlock>
+                                <Button Content="🔄" Style="{StaticResource SecondaryBtn}"
+                                        Command="{Binding ConnectEmailCommand}"
+                                        HorizontalAlignment="Right" Padding="8,3"
+                                        ToolTip="Refresh inbox"/>
+                            </Grid>
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding Emails}"
+                                     SelectedItem="{Binding SelectedEmail}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     BorderThickness="0"
+                                     Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding From}"
+                                                           FontWeight="{Binding FontWeight}"
+                                                           FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Subject}"
+                                                           FontWeight="{Binding FontWeight}"
+                                                           FontSize="12" Opacity="0.8"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Preview}"
+                                                           FontSize="11" Opacity="0.55"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Date, StringFormat='MMM d'}"
+                                                       FontSize="11" Opacity="0.5"
+                                                       VerticalAlignment="Top" Margin="6,0,0,0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- GridSplitter -->
+                    <GridSplitter Grid.Column="1" Width="5"
+                                  HorizontalAlignment="Stretch"
+                                  Background="#CFD8DC" ResizeBehavior="PreviousAndNext"/>
+
+                    <!-- ── RIGHT: preview + reply ── -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*" MinHeight="80"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="200" MinHeight="100"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- empty state -->
+                        <TextBlock Grid.RowSpan="5"
+                                   Text="← Select a message to read it"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Opacity="0.4" FontSize="15">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSelectedEmail}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- message header (visible when email selected) -->
+                        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,4"
+                                Visibility="{Binding HasSelectedEmail, Converter={StaticResource BoolVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedEmail.Subject}"
+                                           FontSize="16" FontWeight="SemiBold"
+                                           TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBlock Text="From: " Opacity="0.6" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedEmail.From}"
+                                               FontSize="12" FontWeight="SemiBold" Margin="0,0,16,0"/>
+                                    <TextBlock Text="Date: " Opacity="0.6" FontSize="12"/>
+                                    <TextBlock Text="{Binding SelectedEmail.Date, StringFormat='ddd MMM d, yyyy  h:mm tt'}"
+                                               FontSize="12" Opacity="0.8"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- message body -->
+                        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,4"
+                                Visibility="{Binding HasSelectedEmail, Converter={StaticResource BoolVis}}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <TextBox Text="{Binding SelectedEmail.Body, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         FontSize="13"
+                                         Foreground="#263238"/>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- reply toolbar -->
+                        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,4"
+                                Visibility="{Binding HasSelectedEmail, Converter={StaticResource BoolVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Reply" Style="{StaticResource SectionHead}"
+                                           VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                <Button Content="✨ AI Draft Reply"
+                                        Style="{StaticResource SuccessBtn}"
+                                        Command="{Binding AiDraftReplyCommand}"
+                                        Margin="0,0,8,0"
+                                        ToolTip="Let AI write a reply based on the email content"/>
+                                <Button Content="📤 Send Reply"
+                                        Style="{StaticResource PrimaryBtn}"
+                                        Command="{Binding SendReplyCommand}"
+                                        ToolTip="Send the reply in the draft box below"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- reply draft editor -->
+                        <Border Grid.Row="3" Style="{StaticResource Card}" Margin="0,0,0,0"
+                                Visibility="{Binding HasSelectedEmail, Converter={StaticResource BoolVis}}">
+                            <TextBox Text="{Binding AiReplyDraft, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     FontSize="13"
+                                     Foreground="#263238">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox">
+                                        <Style.Triggers>
+                                            <Trigger Property="Text" Value="">
+                                                <Setter Property="Background">
+                                                    <Setter.Value>
+                                                        <VisualBrush Stretch="None" AlignmentX="Left" AlignmentY="Top">
+                                                            <VisualBrush.Visual>
+                                                                <TextBlock Text="Click '✨ AI Draft Reply' or type your reply here…"
+                                                                           Foreground="#9E9E9E" Margin="4,4,0,0" FontSize="13"/>
+                                                            </VisualBrush.Visual>
+                                                        </VisualBrush>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ═══════════════════════════════════════════════
+                 EMAIL SETTINGS TAB (was "Email")
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="Email Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="4">
 

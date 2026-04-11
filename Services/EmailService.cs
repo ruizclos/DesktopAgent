@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MailKit.Net.Imap;
+using MailKit.Net.Smtp;
 using MailKit.Search;
 using MailKit.Security;
 using MimeKit;
@@ -79,6 +80,39 @@ namespace LocalAIAgent.Services
 
         /// <summary>Delegates token revocation to the shared GoogleAuthService.</summary>
         public Task RevokeOAuthTokenAsync() => _googleAuth.RevokeAsync();
+
+        /// <summary>Sends a reply email via SMTP.</summary>
+        public async Task SendReplyAsync(string toAddress, string subject, string body)
+        {
+            var cfg = _config.Config;
+
+            var message = new MimeMessage();
+            message.From.Add(MailboxAddress.Parse(cfg.Email));
+            message.To.Add(MailboxAddress.Parse(toAddress));
+            message.Subject = subject.StartsWith("Re:", StringComparison.OrdinalIgnoreCase)
+                ? subject : $"Re: {subject}";
+
+            var builder = new BodyBuilder { TextBody = body + "\n\n" + cfg.EmailSignature };
+            message.Body = builder.ToMessageBody();
+
+            using var smtp = new SmtpClient();
+            await smtp.ConnectAsync(cfg.SmtpServer, cfg.SmtpPort,
+                cfg.UseSmtpSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+
+            if (cfg.UseGmailOAuth)
+            {
+                var credential = await _googleAuth.GetCredentialAsync();
+                await smtp.AuthenticateAsync(
+                    new SaslMechanismOAuth2(cfg.Email, credential.Token.AccessToken));
+            }
+            else
+            {
+                await smtp.AuthenticateAsync(cfg.Email, cfg.EmailPassword);
+            }
+
+            await smtp.SendAsync(message);
+            await smtp.DisconnectAsync(true);
+        }
 
         public string ExtractBody(MimeMessage message)
         {

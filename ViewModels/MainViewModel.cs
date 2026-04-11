@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using LocalAIAgent.Models;
 using LocalAIAgent.Services;
 using LocalAIAgent.Views;
 
@@ -60,6 +63,10 @@ namespace LocalAIAgent.ViewModels
             CopyLogCommand            = new RelayCommand(() => Clipboard.SetText(LogText));
             BrowseReportsFolderCommand = new RelayCommand(BrowseReportsFolder);
             RevokeGmailOAuthCommand    = new RelayCommand(async () => await RevokeGmailOAuthAsync());
+            AiDraftReplyCommand        = new RelayCommand(async () => await AiDraftReplyAsync(),
+                                             () => SelectedEmail != null);
+            SendReplyCommand           = new RelayCommand(async () => await SendReplyAsync(),
+                                             () => SelectedEmail != null && !string.IsNullOrWhiteSpace(AiReplyDraft));
 
             StartTimers();
 
@@ -115,7 +122,45 @@ namespace LocalAIAgent.ViewModels
             set { _logText = value; OnPropertyChanged(); }
         }
 
-        // ── AI Chat ───────────────────────────────────────────────
+        // ── Inbox ─────────────────────────────────────────────────
+
+        public ObservableCollection<EmailMessage> Emails { get; } = new();
+
+        private EmailMessage? _selectedEmail;
+        public EmailMessage? SelectedEmail
+        {
+            get => _selectedEmail;
+            set
+            {
+                _selectedEmail = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasSelectedEmail));
+                if (value != null) value.IsRead = true;
+                // Clear the draft when switching messages
+                AiReplyDraft = "";
+                SendReplyCommand.RaiseCanExecuteChanged();
+                AiDraftReplyCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        public bool HasSelectedEmail => _selectedEmail != null;
+
+        private string _aiReplyDraft = "";
+        public string AiReplyDraft
+        {
+            get => _aiReplyDraft;
+            set { _aiReplyDraft = value; OnPropertyChanged(); SendReplyCommand.RaiseCanExecuteChanged(); }
+        }
+
+        private int _unreadCount;
+        public int UnreadCount
+        {
+            get => _unreadCount;
+            set { _unreadCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(UnreadBadge)); }
+        }
+
+        public string UnreadBadge => _unreadCount > 0 ? $"  ({_unreadCount} new)" : "";
+
 
         private string _aiQuery = "";
         public string AiQuery
@@ -380,6 +425,8 @@ namespace LocalAIAgent.ViewModels
         public RelayCommand CopyLogCommand { get; }
         public RelayCommand BrowseReportsFolderCommand { get; }
         public RelayCommand RevokeGmailOAuthCommand { get; }
+        public RelayCommand AiDraftReplyCommand { get; }
+        public RelayCommand SendReplyCommand { get; }
 
         // ── Command Implementations ───────────────────────────────
 
@@ -420,28 +467,54 @@ namespace LocalAIAgent.ViewModels
             }
 
             IsBusy = true;
-            StatusText = "Connecting to email...";
+            StatusText = "Checking inbox...";
             AppendLog($"[{DateTime.Now:HH:mm}] Connecting to {_config.Config.ImapServer}...");
 
             try
             {
-                var emails = await _emailService.GetRecentEmailsAsync(_config.Config.MaxEmailCount);
-                AppendLog($"[{DateTime.Now:HH:mm}] Fetched {emails.Count} emails.");
+                var raw = await _emailService.GetRecentEmailsAsync(_config.Config.MaxEmailCount);
 
-                foreach (var msg in emails)
-                    AppendLog($"  • [{msg.Date:MMM d}] {msg.From.ToString().Split('<')[0].Trim()} — {msg.Subject}");
+                // Preserve read-state for messages already in the list
+                var existingSubjects = new HashSet<string>(
+                    Emails.Where(e => e.IsRead).Select(e => e.Subject + e.From));
 
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Emails.Clear();
+                    foreach (var msg in raw)
+                    {
+                        var from    = msg.From.Mailboxes.FirstOrDefault();
+                        var subject = msg.Subject ?? "(No Subject)";
+                        var key     = subject + (from?.Name ?? from?.Address ?? "");
+                        var body    = _emailService.ExtractBody(msg);
+                        // Strip HTML tags for plain-text preview/body
+                        body = System.Text.RegularExpressions.Regex.Replace(body, "<[^>]+>", " ");
+                        body = System.Net.WebUtility.HtmlDecode(body).Trim();
+
+                        Emails.Add(new EmailMessage
+                        {
+                            From        = from?.Name ?? from?.Address ?? "Unknown",
+                            FromAddress = from?.Address ?? "",
+                            Subject     = subject,
+                            Date        = msg.Date.LocalDateTime,
+                            Body        = body,
+                            IsRead      = existingSubjects.Contains(key)
+                        });
+                    }
+
+                    UnreadCount = Emails.Count(e => !e.IsRead);
+                });
+
+                AppendLog($"[{DateTime.Now:HH:mm}] Inbox refreshed — {raw.Count} messages, {UnreadCount} unread.");
                 StatusText = "Connected";
-                _emailFailureCount = 0;  // reset on success
+                _emailFailureCount = 0;
             }
             catch (Exception ex)
             {
                 _emailFailureCount++;
-                int remaining = MaxEmailFailures - _emailFailureCount;
 
                 if (_emailFailureCount >= MaxEmailFailures)
                 {
-                    // Stop the auto-refresh timer so it doesn't keep retrying
                     _emailTimer?.Stop();
                     AppendLog($"[{DateTime.Now:HH:mm}] Email error: {ex.Message}");
                     AppendLog($"[{DateTime.Now:HH:mm}] ⛔ Email auto-connect stopped after {MaxEmailFailures} failures. Fix your settings and click Connect Email to try again.");
@@ -452,6 +525,56 @@ namespace LocalAIAgent.ViewModels
                     AppendLog($"[{DateTime.Now:HH:mm}] Email error ({_emailFailureCount}/{MaxEmailFailures}): {ex.Message}");
                     StatusText = $"Error (attempt {_emailFailureCount}/{MaxEmailFailures})";
                 }
+            }
+            finally { IsBusy = false; }
+        }
+
+        private async Task AiDraftReplyAsync()
+        {
+            if (SelectedEmail == null) return;
+
+            IsBusy = true;
+            StatusText = "Drafting reply...";
+            AppendLog($"[{DateTime.Now:HH:mm}] AI drafting reply to: {SelectedEmail.Subject}");
+
+            try
+            {
+                var draft = await _aiService.GenerateEmailReplyAsync(
+                    SelectedEmail.Body, SelectedEmail.Subject);
+                AiReplyDraft = draft;
+                StatusText = "Draft ready";
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[{DateTime.Now:HH:mm}] AI draft error: {ex.Message}");
+                StatusText = "Error";
+            }
+            finally { IsBusy = false; }
+        }
+
+        private async Task SendReplyAsync()
+        {
+            if (SelectedEmail == null || string.IsNullOrWhiteSpace(AiReplyDraft)) return;
+
+            IsBusy = true;
+            StatusText = "Sending reply...";
+            AppendLog($"[{DateTime.Now:HH:mm}] Sending reply to {SelectedEmail.FromAddress}...");
+
+            try
+            {
+                await _emailService.SendReplyAsync(
+                    SelectedEmail.FromAddress,
+                    SelectedEmail.Subject,
+                    AiReplyDraft);
+
+                AppendLog($"[{DateTime.Now:HH:mm}] ✓ Reply sent to {SelectedEmail.From}.");
+                AiReplyDraft = "";
+                StatusText = "Sent";
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[{DateTime.Now:HH:mm}] Send error: {ex.Message}");
+                StatusText = "Error";
             }
             finally { IsBusy = false; }
         }
