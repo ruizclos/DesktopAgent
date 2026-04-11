@@ -13,11 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LocalAIAgent")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56565adb09be975683ba7943a8d6ba8c613f5eba")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b16f28be05575f3161db533f24ecdf95eb0f331e")]
->>>>>>> 56565adb09be975683ba7943a8d6ba8c613f5eba
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b00beafcbfc3ac63456de05b2fd62fe546c4c033")]
 [assembly: System.Reflection.AssemblyProductAttribute("LocalAIAgent")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LocalAIAgent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
