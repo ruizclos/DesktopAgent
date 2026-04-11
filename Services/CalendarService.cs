@@ -138,12 +138,20 @@ namespace LocalAIAgent.Services
                 string? end = null;
                 if (ev.TryGetProperty("subject", out System.Text.Json.JsonElement subjectProp) && subjectProp.ValueKind == System.Text.Json.JsonValueKind.String)
                     subject = subjectProp.GetString();
-                if (ev.TryGetProperty("start", out System.Text.Json.JsonElement startProp) && startProp.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                    startProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement startDateProp) && startDateProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    start = startDateProp.GetString();
-                if (ev.TryGetProperty("end", out System.Text.Json.JsonElement endProp) && endProp.ValueKind == System.Text.Json.JsonValueKind.Object &&
-                    endProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement endDateProp) && endDateProp.ValueKind == System.Text.Json.JsonValueKind.String)
-                    end = endDateProp.GetString();
+                if (ev.TryGetProperty("start", out System.Text.Json.JsonElement startProp) && startProp.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    if (startProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement startDateProp) && startDateProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        start = startDateProp.GetString();
+                    }
+                }
+                if (ev.TryGetProperty("end", out System.Text.Json.JsonElement endProp) && endProp.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    if (endProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement endDateProp) && endDateProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    {
+                        end = endDateProp.GetString();
+                    }
+                }
                 sb.AppendLine($"{subject ?? "(No Subject)"} — {start ?? "?"} to {end ?? "?"}");
             }
             return sb.ToString();
