@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Util.Store;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using MailKit.Security;
@@ -15,10 +12,12 @@ namespace LocalAIAgent.Services
     public class EmailService
     {
         private readonly ConfigService _config;
+        private readonly GoogleAuthService _googleAuth;
 
-        public EmailService(ConfigService config)
+        public EmailService(ConfigService config, GoogleAuthService googleAuth)
         {
-            _config = config;
+            _config     = config;
+            _googleAuth = googleAuth;
         }
 
         public async Task<List<MimeMessage>> GetRecentEmailsAsync(int count)
@@ -36,7 +35,9 @@ namespace LocalAIAgent.Services
 
             if (cfg.UseGmailOAuth)
             {
-                await AuthenticateWithOAuthAsync(client, cfg);
+                var credential = await _googleAuth.GetCredentialAsync();
+                await client.AuthenticateAsync(
+                    new MailKit.Security.SaslMechanismOAuth2(cfg.Email, credential.Token.AccessToken));
             }
             else
             {
@@ -76,52 +77,8 @@ namespace LocalAIAgent.Services
             return messages;
         }
 
-        private static async Task AuthenticateWithOAuthAsync(ImapClient client, AppConfig cfg)
-        {
-            if (string.IsNullOrWhiteSpace(cfg.GmailOAuthClientId) ||
-                string.IsNullOrWhiteSpace(cfg.GmailOAuthClientSecret))
-                throw new Exception(
-                    "Gmail OAuth2 is enabled but Client ID or Client Secret is missing.\n" +
-                    "Enter them in the Email tab under 'Google OAuth2 (MFA)'.");
-
-            // Token cache stored in %APPDATA%\LocalAIAgent\Gmail.Auth
-            var dataStore = new FileDataStore(
-                System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "LocalAIAgent", "Gmail.Auth"),
-                fullPath: true);
-
-            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                new ClientSecrets
-                {
-                    ClientId     = cfg.GmailOAuthClientId,
-                    ClientSecret = cfg.GmailOAuthClientSecret
-                },
-                new[] { "https://mail.google.com/" },
-                cfg.Email,
-                CancellationToken.None,
-                dataStore);
-
-            // Refresh the token if it has expired
-            if (credential.Token.IsStale)
-                await credential.RefreshTokenAsync(CancellationToken.None);
-
-            await client.AuthenticateAsync(
-                new SaslMechanismOAuth2(cfg.Email, credential.Token.AccessToken));
-        }
-
-        /// <summary>Clears the locally cached OAuth2 token, forcing a fresh Google sign-in.</summary>
-        public async Task RevokeOAuthTokenAsync()
-        {
-            var cfg = _config.Config;
-            var dataStore = new FileDataStore(
-                System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "LocalAIAgent", "Gmail.Auth"),
-                fullPath: true);
-
-            await dataStore.DeleteAsync<Google.Apis.Auth.OAuth2.Responses.TokenResponse>(cfg.Email);
-        }
+        /// <summary>Delegates token revocation to the shared GoogleAuthService.</summary>
+        public Task RevokeOAuthTokenAsync() => _googleAuth.RevokeAsync();
 
         public string ExtractBody(MimeMessage message)
         {

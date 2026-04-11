@@ -16,12 +16,13 @@ namespace LocalAIAgent
             InitializeComponent();
 
             // Build service graph
-            var config = new ConfigService();
-            var log    = new LoggingService();
-            var ai     = new AiService(config);
-            var email  = new EmailService(config);
-            var calendar   = new CalendarService(config);
-            var pdf        = new PdfService(ai);
+            var config   = new ConfigService();
+            var log      = new LoggingService();
+            var googleAuth = new GoogleAuthService(config);
+            var ai       = new AiService(config);
+            var email    = new EmailService(config, googleAuth);
+            var calendar = new CalendarService(config, googleAuth);
+            var pdf      = new PdfService(ai);
             var report     = new ReportService(ai, email, calendar, config);
             var appointment = new AppointmentService(ai, calendar);
 

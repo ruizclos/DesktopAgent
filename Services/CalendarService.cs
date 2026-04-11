@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
 using LocalAIAgent.Models;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
@@ -16,10 +15,12 @@ namespace LocalAIAgent.Services
     public class CalendarService
     {
         private readonly ConfigService _config;
+        private readonly GoogleAuthService _googleAuth;
 
-        public CalendarService(ConfigService config)
+        public CalendarService(ConfigService config, GoogleAuthService googleAuth)
         {
-            _config = config;
+            _config     = config;
+            _googleAuth = googleAuth;
         }
 
         // ---------------------------------------------------------
@@ -43,21 +44,15 @@ namespace LocalAIAgent.Services
         {
             var cfg = _config.Config;
 
-            if (string.IsNullOrWhiteSpace(cfg.GoogleClientId) ||
-                string.IsNullOrWhiteSpace(cfg.GoogleClientSecret))
-                return "Google Calendar credentials missing.";
-
-
-            var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                new ClientSecrets
-                {
-                    ClientId = cfg.GoogleClientId,
-                    ClientSecret = cfg.GoogleClientSecret
-                },
-                new[] { Google.Apis.Calendar.v3.CalendarService.Scope.CalendarReadonly },
-                "user",
-                CancellationToken.None
-            ).Result;
+            UserCredential credential;
+            try
+            {
+                credential = await _googleAuth.GetCredentialAsync();
+            }
+            catch (Exception ex)
+            {
+                return $"Google auth error: {ex.Message}";
+            }
 
             var service = new Google.Apis.Calendar.v3.CalendarService(new BaseClientService.Initializer
             {
