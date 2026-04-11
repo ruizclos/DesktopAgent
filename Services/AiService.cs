@@ -19,7 +19,7 @@ namespace LocalAIAgent.Services
             _http = new HttpClient();
         }
 
-        private record ChatRequest(string model, ChatMessage[] messages);
+        private record ChatRequest(string model, ChatMessage[] messages, int max_tokens);
         private record ChatMessage(string role, string content);
         private record ChatResponse(ChatChoice[] choices);
         private record ChatChoice(ChatMessage message);
@@ -30,12 +30,13 @@ namespace LocalAIAgent.Services
                 throw new Exception("API key is missing.");
 
             var request = new ChatRequest(
-                model: "gpt-4o-mini",
+                model: _config.Config.AiModel,
                 messages: new[]
                 {
-                    new ChatMessage("system", "You are a helpful assistant."),
+                    new ChatMessage("system", _config.Config.AiSystemPrompt),
                     new ChatMessage("user", prompt)
-                }
+                },
+                max_tokens: _config.Config.AiMaxTokens
             );
 
             var json = JsonSerializer.Serialize(request);
@@ -45,7 +46,7 @@ namespace LocalAIAgent.Services
             _http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", _config.Config.ApiKey);
 
-            var response = await _http.PostAsync("https://api.openai.com/v1/chat/completions", content);
+            var response = await _http.PostAsync(_config.Config.AiEndpoint, content);
             var body = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

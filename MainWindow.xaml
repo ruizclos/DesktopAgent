@@ -1,128 +1,526 @@
 <Window x:Class="LocalAIAgent.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:LocalAIAgent"
-        mc:Ignorable="d"
         Title="Local AI Automation Agent"
-        Height="650"
-        Width="900"
+        Height="740" Width="1120"
+        MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen"
-        Background="#F3F3F3">
+        FontFamily="Segoe UI" FontSize="13">
 
-    <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVis"/>
 
-        <!-- LEFT SIDEBAR -->
-        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+        <!-- Primary button -->
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Background" Value="#1976D2"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1565C0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#0D47A1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#B0BEC5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-            <TextBlock Text="Settings"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       Margin="0,0,0,20"/>
+        <Style x:Key="SecondaryBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+            <Setter Property="Background" Value="#546E7A"/>
+        </Style>
 
-            <!-- Email -->
-            <TextBlock Text="Email" FontWeight="Bold"/>
-            <TextBox Text="{Binding Email}" Margin="0,5,0,15"/>
+        <Style x:Key="SuccessBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+            <Setter Property="Background" Value="#388E3C"/>
+        </Style>
 
-            <!-- IMAP Server -->
-            <TextBlock Text="IMAP Server" FontWeight="Bold"/>
-            <TextBox Text="{Binding ImapServer}" Margin="0,5,0,15"/>
+        <Style x:Key="DangerBtn" TargetType="Button" BasedOn="{StaticResource PrimaryBtn}">
+            <Setter Property="Background" Value="#D32F2F"/>
+        </Style>
 
-            <!-- IMAP Port -->
-            <TextBlock Text="IMAP Port" FontWeight="Bold"/>
-            <TextBox Text="{Binding ImapPort}" Margin="0,5,0,15"/>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="BorderBrush" Value="#B0BEC5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
 
-            <!-- SSL -->
-            <CheckBox Content="Use SSL"
-                      IsChecked="{Binding UseSsl}"
-                      Margin="0,0,0,15"/>
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="BorderBrush" Value="#B0BEC5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
 
-            <!-- API Key -->
-            <TextBlock Text="AI API Key" FontWeight="Bold"/>
-            <PasswordBox x:Name="ApiKeyBox"
-                         Margin="0,5,0,15"
-                         PasswordChanged="ApiKeyBox_PasswordChanged"/>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="6,5"/>
+            <Setter Property="BorderBrush" Value="#B0BEC5"/>
+        </Style>
 
-            <!-- Reports Folder -->
-            <TextBlock Text="Reports Folder" FontWeight="Bold"/>
-            <TextBox Text="{Binding ReportsFolder}" Margin="0,5,0,15"/>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#37474F"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,10,0,3"/>
+        </Style>
 
-            <!-- Calendar Provider -->
-            <TextBlock Text="Calendar Provider" FontWeight="Bold" Margin="0,10,0,5"/>
+        <Style x:Key="SectionHead" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#1565C0"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
 
-            <StackPanel Orientation="Vertical" Margin="0,0,0,15">
-                <RadioButton Content="Google Calendar"
-                             IsChecked="{Binding UseGoogleCalendar}"/>
-                <RadioButton Content="Outlook Calendar"
-                             IsChecked="{Binding UseOutlookCalendar}"/>
-            </StackPanel>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#E0E0E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
 
-            <!-- Save Settings -->
-            <Button Content="Save Settings"
-                    Command="{Binding SaveSettingsCommand}"
-                    Background="#009688"
-                    Foreground="White"
-                    Height="32"/>
-        </StackPanel>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="16,9"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBdr" Background="Transparent"
+                                BorderThickness="0,0,0,3"
+                                BorderBrush="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBdr" Property="BorderBrush" Value="#1976D2"/>
+                                <Setter Property="Foreground" Value="#1976D2"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBdr" Property="Background" Value="#E3F2FD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
-        <!-- RIGHT PANEL -->
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+    <DockPanel Background="#ECEFF1">
 
-            <!-- ACTION BUTTONS -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                <Button Content="Connect Email"
-                        Command="{Binding ConnectEmailCommand}"
-                        Margin="0,0,10,0"
-                        Width="140"/>
+        <!-- TOP HEADER BAR -->
+        <Border DockPanel.Dock="Top" Background="#1976D2" Padding="18,11">
+            <Grid>
+                <TextBlock Text="Local AI Automation Agent"
+                           FontSize="17" FontWeight="Bold"
+                           Foreground="White" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Margin="0,0,7,0"
+                             Fill="{Binding StatusBrush}"/>
+                    <TextBlock Text="{Binding StatusText}"
+                               Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
-                <Button Content="Summarize PDF"
-                        Command="{Binding SummarizePdfCommand}"
-                        Margin="0,0,10,0"
-                        Width="140"/>
+        <!-- BOTTOM STATUS BAR -->
+        <Border DockPanel.Dock="Bottom" Background="#CFD8DC"
+                BorderBrush="#B0BEC5" BorderThickness="0,1,0,0" Padding="14,5">
+            <Grid>
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
+                           Foreground="#455A64" FontSize="12"/>
+                <ProgressBar HorizontalAlignment="Right" Width="200" Height="6"
+                             IsIndeterminate="True" VerticalAlignment="Center"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolVis}}"/>
+            </Grid>
+        </Border>
 
-                <Button Content="Daily Report"
-                        Command="{Binding GenerateDailyReportCommand}"
-                        Margin="0,0,10,0"
-                        Width="140"/>
+        <!-- MAIN TAB CONTROL -->
+        <TabControl Background="Transparent" BorderThickness="0" Margin="10,8,10,0">
 
-                <Button Content="Schedule Appointment"
-                        Command="{Binding ScheduleAppointmentCommand}"
-                        Margin="0,0,10,0"
-                        Width="160"/>
+            <!-- ═══════════════════════════════════════════════
+                 DASHBOARD TAB
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="Dashboard">
+                <Grid Margin="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                <Button Content="Check Availability"
-                        Command="{Binding ViewAvailabilityCommand}"
-                        Width="150"/>
-            </StackPanel>
+                    <!-- Action buttons -->
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Actions" Style="{StaticResource SectionHead}"/>
+                            <WrapPanel Grid.Row="1">
+                                <Button Content="Connect Email"
+                                        Style="{StaticResource PrimaryBtn}"
+                                        Command="{Binding ConnectEmailCommand}"
+                                        Margin="0,0,8,6"/>
+                                <Button Content="Summarize PDF"
+                                        Style="{StaticResource PrimaryBtn}"
+                                        Command="{Binding SummarizePdfCommand}"
+                                        Margin="0,0,8,6"/>
+                                <Button Content="Generate Reply"
+                                        Style="{StaticResource SecondaryBtn}"
+                                        Command="{Binding GenerateReplyCommand}"
+                                        Margin="0,0,8,6"/>
+                                <Button Content="Daily Report"
+                                        Style="{StaticResource SecondaryBtn}"
+                                        Command="{Binding GenerateDailyReportCommand}"
+                                        Margin="0,0,8,6"/>
+                                <Button Content="Schedule Appointment"
+                                        Style="{StaticResource SecondaryBtn}"
+                                        Command="{Binding ScheduleAppointmentCommand}"
+                                        Margin="0,0,8,6"/>
+                                <Button Content="Check Availability"
+                                        Style="{StaticResource SecondaryBtn}"
+                                        Command="{Binding ViewAvailabilityCommand}"
+                                        Margin="0,0,0,6"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
 
-            <!-- STATUS -->
-            <TextBlock Grid.Row="1"
-                       Text="{Binding StatusText}"
-                       FontSize="16"
-                       FontWeight="Bold"
-                       Foreground="#444"
-                       Margin="0,0,0,10"/>
+                    <!-- AI Chat panel -->
+                    <Border Grid.Row="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Ask AI" Style="{StaticResource SectionHead}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding AiQuery, UpdateSourceTrigger=PropertyChanged}"
+                                         x:Name="AiQueryBox"/>
+                                <Button Grid.Column="2" Content="Ask"
+                                        Style="{StaticResource SuccessBtn}"
+                                        Command="{Binding AskAiCommand}"
+                                        Margin="0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-            <!-- LOG OUTPUT -->
-            <ScrollViewer Grid.Row="2"
-                          VerticalScrollBarVisibility="Auto"
-                          Background="White"
-                          BorderBrush="#DDD"
-                          BorderThickness="1">
-                <TextBlock Text="{Binding LogText}"
-                           TextWrapping="Wrap"
-                           Margin="10"/>
-            </ScrollViewer>
-        </Grid>
-    </Grid>
+                    <!-- Activity log -->
+                    <Border Grid.Row="2" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="Activity Log" Style="{StaticResource SectionHead}"
+                                           VerticalAlignment="Center" Margin="0"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="Copy Log" Style="{StaticResource SecondaryBtn}"
+                                            Command="{Binding CopyLogCommand}"
+                                            Padding="10,4" Margin="0,0,6,0"/>
+                                    <Button Content="Clear" Style="{StaticResource DangerBtn}"
+                                            Command="{Binding ClearLogCommand}"
+                                            Padding="10,4" Margin="0"/>
+                                </StackPanel>
+                            </Grid>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <TextBox Text="{Binding LogText}"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         FontFamily="Consolas"
+                                         FontSize="12"
+                                         Foreground="#263238"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ═══════════════════════════════════════════════
+                 EMAIL TAB
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="Email">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4">
+
+                        <!-- IMAP -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="IMAP  (Receive)" Style="{StaticResource SectionHead}"/>
+
+                                <TextBlock Text="Email Address" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding Email}"/>
+
+                                <TextBlock Text="Password" Style="{StaticResource FieldLabel}"/>
+                                <PasswordBox x:Name="EmailPasswordBox"
+                                             PasswordChanged="EmailPasswordBox_PasswordChanged"/>
+
+                                <TextBlock Text="IMAP Server" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding ImapServer}"/>
+
+                                <Grid Margin="0,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="IMAP Port" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding ImapPort}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                                        <CheckBox Content="Use SSL/TLS" IsChecked="{Binding UseSsl}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- SMTP -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="SMTP  (Send)" Style="{StaticResource SectionHead}"/>
+
+                                <TextBlock Text="SMTP Server" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding SmtpServer}"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="SMTP Port" Style="{StaticResource FieldLabel}"/>
+                                        <TextBox Text="{Binding SmtpPort}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,4">
+                                        <CheckBox Content="Use SSL/TLS" IsChecked="{Binding UseSmtpSsl}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Behavior -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Behavior" Style="{StaticResource SectionHead}"/>
+
+                                <TextBlock Text="Max emails to fetch" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding MaxEmailCount}" Width="120" HorizontalAlignment="Left"/>
+
+                                <CheckBox Content="Auto-check email on startup"
+                                          IsChecked="{Binding AutoCheckEmailOnStart}"
+                                          Margin="0,10,0,0"/>
+
+                                <TextBlock Text="Auto-refresh interval (minutes, 0 = disabled)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding EmailRefreshIntervalMinutes}"
+                                         Width="120" HorizontalAlignment="Left"/>
+
+                                <TextBlock Text="Email Signature" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding EmailSignature}" Height="80"
+                                         TextWrapping="Wrap" AcceptsReturn="True"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Save Email Settings" Style="{StaticResource SuccessBtn}"
+                                Command="{Binding SaveSettingsCommand}"
+                                HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═══════════════════════════════════════════════
+                 AI TAB
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="AI">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4">
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="API Configuration" Style="{StaticResource SectionHead}"/>
+
+                                <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
+                                <PasswordBox x:Name="ApiKeyBox"
+                                             PasswordChanged="ApiKeyBox_PasswordChanged"/>
+
+                                <TextBlock Text="AI Model" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox SelectedItem="{Binding AiModel}"
+                                          ItemsSource="{Binding AiModelOptions}"/>
+
+                                <TextBlock Text="API Endpoint  (leave default for OpenAI; change for local LLM)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding AiEndpoint}"/>
+
+                                <TextBlock Text="Max Response Tokens" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding AiMaxTokens}" Width="120" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="System Prompt" Style="{StaticResource SectionHead}"/>
+                                <TextBlock Text="Controls how the AI assistant behaves across all operations."
+                                           Foreground="#607D8B" FontSize="12" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding AiSystemPrompt}" Height="110"
+                                         TextWrapping="Wrap" AcceptsReturn="True"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Save AI Settings" Style="{StaticResource SuccessBtn}"
+                                Command="{Binding SaveSettingsCommand}"
+                                HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═══════════════════════════════════════════════
+                 CALENDAR TAB
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="Calendar">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4">
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Calendar Provider" Style="{StaticResource SectionHead}"/>
+                                <RadioButton Content="Google Calendar"
+                                             IsChecked="{Binding UseGoogleCalendar}"
+                                             Margin="0,0,0,8"/>
+                                <RadioButton Content="Microsoft Outlook / Office 365"
+                                             IsChecked="{Binding UseOutlookCalendar}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Google Calendar" Style="{StaticResource SectionHead}"/>
+                                <TextBlock Text="Client ID" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding GoogleClientId}"/>
+                                <TextBlock Text="Client Secret" Style="{StaticResource FieldLabel}"/>
+                                <PasswordBox x:Name="GoogleSecretBox"
+                                             PasswordChanged="GoogleSecretBox_PasswordChanged"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Microsoft / Outlook" Style="{StaticResource SectionHead}"/>
+                                <TextBlock Text="Application (Client) ID" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding MicrosoftClientId}"/>
+                                <TextBlock Text="Tenant ID" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding MicrosoftTenantId}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Behavior" Style="{StaticResource SectionHead}"/>
+                                <TextBlock Text="Look-ahead days (how many days of events to fetch)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding CalendarLookAheadDays}"
+                                         Width="120" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Save Calendar Settings" Style="{StaticResource SuccessBtn}"
+                                Command="{Binding SaveSettingsCommand}"
+                                HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ═══════════════════════════════════════════════
+                 APP SETTINGS TAB
+            ═══════════════════════════════════════════════ -->
+            <TabItem Header="App Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="4">
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Startup" Style="{StaticResource SectionHead}"/>
+                                <CheckBox Content="Start minimized to system tray"
+                                          IsChecked="{Binding StartMinimized}"
+                                          Margin="0,0,0,8"/>
+                                <CheckBox Content="Enable desktop notifications"
+                                          IsChecked="{Binding EnableNotifications}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Reports" Style="{StaticResource SectionHead}"/>
+
+                                <TextBlock Text="Reports Output Folder" Style="{StaticResource FieldLabel}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding ReportsFolder}"/>
+                                    <Button Grid.Column="2" Content="Browse"
+                                            Style="{StaticResource SecondaryBtn}"
+                                            Command="{Binding BrowseReportsFolderCommand}"
+                                            Padding="12,5" Margin="0"/>
+                                </Grid>
+
+                                <CheckBox Content="Schedule daily report automatically"
+                                          IsChecked="{Binding ReportScheduleEnabled}"
+                                          Margin="0,12,0,4"/>
+
+                                <TextBlock Text="Report generation time (HH:mm)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding ReportScheduleTime}"
+                                         Width="120" HorizontalAlignment="Left"
+                                         IsEnabled="{Binding ReportScheduleEnabled}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Logs" Style="{StaticResource SectionHead}"/>
+                                <TextBlock Text="Retain log files for (days)"
+                                           Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding LogRetentionDays}"
+                                         Width="120" HorizontalAlignment="Left"/>
+                                <TextBlock Text="Log files are stored in the Logs\ folder relative to the app."
+                                           Foreground="#78909C" FontSize="12" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Save App Settings" Style="{StaticResource SuccessBtn}"
+                                Command="{Binding SaveSettingsCommand}"
+                                HorizontalAlignment="Left" Margin="0,0,0,16"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
 </Window>

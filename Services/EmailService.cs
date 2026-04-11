@@ -31,7 +31,7 @@ namespace LocalAIAgent.Services
             await client.ConnectAsync(cfg.ImapServer, cfg.ImapPort,
                 cfg.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls);
 
-            await client.AuthenticateAsync(cfg.Email, cfg.ApiKey);
+            await client.AuthenticateAsync(cfg.Email, cfg.EmailPassword);
 
             var inbox = client.Inbox;
             await inbox.OpenAsync(MailKit.FolderAccess.ReadOnly);
