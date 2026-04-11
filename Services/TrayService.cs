@@ -45,7 +45,7 @@ namespace LocalAIAgent.Services
         private void ExitApp()
         {
             _trayIcon.Visible = false;
-            Application.Current.Shutdown();
+            System.Windows.Application.Current.Shutdown();
         }
 
         public void Dispose()
