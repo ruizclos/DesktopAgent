@@ -25,6 +25,8 @@ namespace LocalAIAgent.ViewModels
         private DispatcherTimer? _emailTimer;
         private DispatcherTimer? _reportTimer;
         private DateTime _lastReportTriggered = DateTime.MinValue;
+        private int _emailFailureCount = 0;
+        private const int MaxEmailFailures = 3;
 
         public MainViewModel(ConfigService config,
                              AiService aiService,
@@ -43,7 +45,11 @@ namespace LocalAIAgent.ViewModels
             _calendarService = calendarService;
 
             SaveSettingsCommand       = new RelayCommand(SaveSettings);
-            ConnectEmailCommand       = new RelayCommand(async () => await ConnectEmailAsync());
+            ConnectEmailCommand       = new RelayCommand(async () =>
+            {
+                _emailFailureCount = 0;  // manual click always resets the counter
+                await ConnectEmailAsync();
+            });
             SummarizePdfCommand       = new RelayCommand(async () => await SummarizePdfAsync());
             GenerateReplyCommand      = new RelayCommand(async () => await GenerateReplyAsync());
             GenerateDailyReportCommand = new RelayCommand(async () => await GenerateDailyReportAsync());
@@ -407,6 +413,12 @@ namespace LocalAIAgent.ViewModels
 
         private async Task ConnectEmailAsync()
         {
+            if (_emailFailureCount >= MaxEmailFailures)
+            {
+                AppendLog($"[{DateTime.Now:HH:mm}] Email connection stopped — reached {MaxEmailFailures} consecutive failures. Fix settings and click Connect Email to retry.");
+                return;
+            }
+
             IsBusy = true;
             StatusText = "Connecting to email...";
             AppendLog($"[{DateTime.Now:HH:mm}] Connecting to {_config.Config.ImapServer}...");
@@ -420,11 +432,26 @@ namespace LocalAIAgent.ViewModels
                     AppendLog($"  • [{msg.Date:MMM d}] {msg.From.ToString().Split('<')[0].Trim()} — {msg.Subject}");
 
                 StatusText = "Connected";
+                _emailFailureCount = 0;  // reset on success
             }
             catch (Exception ex)
             {
-                AppendLog($"[{DateTime.Now:HH:mm}] Email error: {ex.Message}");
-                StatusText = "Error";
+                _emailFailureCount++;
+                int remaining = MaxEmailFailures - _emailFailureCount;
+
+                if (_emailFailureCount >= MaxEmailFailures)
+                {
+                    // Stop the auto-refresh timer so it doesn't keep retrying
+                    _emailTimer?.Stop();
+                    AppendLog($"[{DateTime.Now:HH:mm}] Email error: {ex.Message}");
+                    AppendLog($"[{DateTime.Now:HH:mm}] ⛔ Email auto-connect stopped after {MaxEmailFailures} failures. Fix your settings and click Connect Email to try again.");
+                    StatusText = "Email Stopped";
+                }
+                else
+                {
+                    AppendLog($"[{DateTime.Now:HH:mm}] Email error ({_emailFailureCount}/{MaxEmailFailures}): {ex.Message}");
+                    StatusText = $"Error (attempt {_emailFailureCount}/{MaxEmailFailures})";
+                }
             }
             finally { IsBusy = false; }
         }
