@@ -392,6 +392,19 @@ namespace LocalAIAgent.ViewModels
                 ReportsFolder = dlg.FolderName;
         }
 
+        private async Task RevokeGmailOAuthAsync()
+        {
+            try
+            {
+                await _emailService.RevokeOAuthTokenAsync();
+                AppendLog($"[{DateTime.Now:HH:mm}] Gmail OAuth token cleared. Next connection will open Google sign-in.");
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[{DateTime.Now:HH:mm}] Revoke error: {ex.Message}");
+            }
+        }
+
         private async Task ConnectEmailAsync()
         {
             IsBusy = true;

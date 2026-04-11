@@ -29,9 +29,10 @@ namespace LocalAIAgent
             DataContext = _viewModel;
 
             // Pre-fill masked fields from saved config
-            ApiKeyBox.Password        = config.Config.ApiKey;
-            EmailPasswordBox.Password = config.Config.EmailPassword;
-            GoogleSecretBox.Password  = config.Config.GoogleClientSecret;
+            ApiKeyBox.Password             = config.Config.ApiKey;
+            EmailPasswordBox.Password      = config.Config.EmailPassword;
+            GoogleSecretBox.Password       = config.Config.GoogleClientSecret;
+            GmailOAuthSecretBox.Password   = config.Config.GmailOAuthClientSecret;
 
             // Initialize tray service
             _tray = new TrayService(this);
@@ -61,6 +62,12 @@ namespace LocalAIAgent
         {
             if (DataContext is MainViewModel vm)
                 vm.GoogleClientSecret = GoogleSecretBox.Password;
+        }
+
+        private void GmailOAuthSecretBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+                vm.GmailOAuthClientSecret = GmailOAuthSecretBox.Password;
         }
 
         // ─── Minimize to tray ────────────────────────────────────
