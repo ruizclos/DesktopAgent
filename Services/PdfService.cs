@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using iTextSharp.text.pdf;
-using iTextSharp.text.pdf.parser;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 
 namespace LocalAIAgent.Services
 {
@@ -31,14 +31,13 @@ namespace LocalAIAgent.Services
         private string ExtractText(string filePath)
         {
             var sb = new StringBuilder();
-
-            using var reader = new PdfReader(filePath);
-            for (int i = 1; i <= reader.NumberOfPages; i++)
+            using (var document = PdfDocument.Open(filePath))
             {
-                var pageText = PdfTextExtractor.GetTextFromPage(reader, i);
-                sb.AppendLine(pageText);
+                foreach (Page page in document.GetPages())
+                {
+                    sb.AppendLine(page.Text);
+                }
             }
-
             return sb.ToString();
         }
     }

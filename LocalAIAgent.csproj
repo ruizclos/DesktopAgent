@@ -13,7 +13,8 @@
     <PackageReference Include="MailKit" Version="4.3.0" />
 
     <!-- PDF Parsing -->
-    <PackageReference Include="iTextSharp.LGPLv2.Core" Version="1.7.1" />
+    <!-- <PackageReference Include="iTextSharp.LGPLv2.Core" Version="1.7.1" /> -->
+    <PackageReference Include="UglyToad.PdfPig" Version="0.1.9-alpha001-patch1" />
 
     <!-- Google Calendar -->
     <PackageReference Include="Google.Apis.Calendar.v3" Version="1.68.0.3454" />

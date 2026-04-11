@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using LocalAIAgent.Models;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
@@ -46,13 +47,14 @@ namespace LocalAIAgent.Services
                 string.IsNullOrWhiteSpace(cfg.GoogleClientSecret))
                 return "Google Calendar credentials missing.";
 
+
             var credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                 new ClientSecrets
                 {
                     ClientId = cfg.GoogleClientId,
                     ClientSecret = cfg.GoogleClientSecret
                 },
-                new[] { CalendarService.Scope.CalendarReadonly },
+                new[] { Google.Apis.Calendar.v3.CalendarService.Scope.CalendarReadonly },
                 "user",
                 CancellationToken.None
             ).Result;
@@ -63,11 +65,13 @@ namespace LocalAIAgent.Services
                 ApplicationName = "Local AI Agent"
             });
 
+
             var request = service.Events.List("primary");
-            request.TimeMin = DateTime.Now;
-            request.TimeMax = DateTime.Now.AddDays(7);
+            request.TimeMinDateTimeOffset = DateTimeOffset.Now;
+            request.TimeMaxDateTimeOffset = DateTimeOffset.Now.AddDays(7);
             request.SingleEvents = true;
             request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+
 
             var events = await request.ExecuteAsync();
 
@@ -75,9 +79,10 @@ namespace LocalAIAgent.Services
                 return "No upcoming Google Calendar events.";
 
             var sb = new StringBuilder();
+
             foreach (var ev in events.Items)
             {
-                sb.AppendLine($"{ev.Summary} — {ev.Start.DateTime} to {ev.End.DateTime}");
+                sb.AppendLine($"{ev.Summary} — {ev.Start.DateTimeDateTimeOffset} to {ev.End.DateTimeDateTimeOffset}");
             }
 
             return sb.ToString();
@@ -112,30 +117,27 @@ namespace LocalAIAgent.Services
                 return $"Outlook auth error: {ex.Message}";
             }
 
-            var graphClient = new GraphServiceClient(
-                new DelegateAuthenticationProvider(request =>
-                {
-                    request.Headers.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.AccessToken);
-                    return Task.CompletedTask;
-                })
-            );
 
-            var events = await graphClient.Me.Events
-                .Request()
-                .Filter($"start/dateTime ge '{DateTime.Now:O}' and start/dateTime le '{DateTime.Now.AddDays(7):O}'")
-                .OrderBy("start/dateTime")
-                .GetAsync();
 
-            if (events.Count == 0)
+            // Use direct HTTP request for access token authentication (workaround for SDK v5+)
+            var httpClient = new System.Net.Http.HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.AccessToken);
+            var url = $"https://graph.microsoft.com/v1.0/me/events?$filter=start/dateTime ge '{DateTime.Now:O}' and start/dateTime le '{DateTime.Now.AddDays(7):O}'&$orderby=start/dateTime";
+            var response = await httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return $"Outlook API error: {response.StatusCode}";
+            var json = await response.Content.ReadAsStringAsync();
+            dynamic obj = System.Text.Json.JsonSerializer.Deserialize<dynamic>(json);
+            if (obj == null || obj.value == null || obj.value.GetArrayLength() == 0)
                 return "No upcoming Outlook events.";
-
             var sb = new StringBuilder();
-            foreach (var ev in events)
+            foreach (var ev in obj.value.EnumerateArray())
             {
-                sb.AppendLine($"{ev.Subject} — {ev.Start.DateTime} to {ev.End.DateTime}");
+                var subject = ev.GetProperty("subject").GetString();
+                var start = ev.GetProperty("start").GetProperty("dateTime").GetString();
+                var end = ev.GetProperty("end").GetProperty("dateTime").GetString();
+                sb.AppendLine($"{subject} — {start} to {end}");
             }
-
             return sb.ToString();
         }
 

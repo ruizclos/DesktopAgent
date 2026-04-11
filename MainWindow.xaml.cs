@@ -31,8 +31,7 @@ namespace LocalAIAgent
                 pdf,
                 report,
                 appointment,
-                calendar,
-                log
+                calendar
             );
 
             DataContext = _viewModel;
