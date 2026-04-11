@@ -127,29 +127,30 @@ namespace LocalAIAgent.Services
             if (!response.IsSuccessStatusCode)
                 return $"Outlook API error: {response.StatusCode}";
             var json = await response.Content.ReadAsStringAsync();
-            dynamic obj = System.Text.Json.JsonSerializer.Deserialize<dynamic>(json);
-            if (obj == null || obj.value == null || obj.value.GetArrayLength() == 0)
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.TryGetProperty("value", out var eventsArray) || eventsArray.ValueKind != System.Text.Json.JsonValueKind.Array || eventsArray.GetArrayLength() == 0)
                 return "No upcoming Outlook events.";
             var sb = new StringBuilder();
-            foreach (var ev in obj.value.EnumerateArray())
+            foreach (var ev in eventsArray.EnumerateArray())
             {
                 string? subject = null;
                 string? start = null;
                 string? end = null;
-                if (ev.TryGetProperty("subject", out System.Text.Json.JsonElement subjectProp) && subjectProp.ValueKind == System.Text.Json.JsonValueKind.String)
+                if (ev.TryGetProperty("subject", out var subjectProp) && subjectProp.ValueKind == System.Text.Json.JsonValueKind.String)
                 {
                     subject = subjectProp.GetString();
                 }
-                if (ev.TryGetProperty("start", out System.Text.Json.JsonElement startProp) && startProp.ValueKind == System.Text.Json.JsonValueKind.Object)
+                if (ev.TryGetProperty("start", out var startProp) && startProp.ValueKind == System.Text.Json.JsonValueKind.Object)
                 {
-                    if (startProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement sdp) && sdp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    if (startProp.TryGetProperty("dateTime", out var sdp) && sdp.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
                         start = sdp.GetString();
                     }
                 }
-                if (ev.TryGetProperty("end", out System.Text.Json.JsonElement endProp) && endProp.ValueKind == System.Text.Json.JsonValueKind.Object)
+                if (ev.TryGetProperty("end", out var endProp) && endProp.ValueKind == System.Text.Json.JsonValueKind.Object)
                 {
-                    if (endProp.TryGetProperty("dateTime", out System.Text.Json.JsonElement edp) && edp.ValueKind == System.Text.Json.JsonValueKind.String)
+                    if (endProp.TryGetProperty("dateTime", out var edp) && edp.ValueKind == System.Text.Json.JsonValueKind.String)
                     {
                         end = edp.GetString();
                     }
