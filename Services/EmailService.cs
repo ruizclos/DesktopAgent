@@ -31,7 +31,23 @@ namespace LocalAIAgent.Services
             await client.ConnectAsync(cfg.ImapServer, cfg.ImapPort,
                 cfg.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls);
 
-            await client.AuthenticateAsync(cfg.Email, cfg.EmailPassword);
+            try
+            {
+                await client.AuthenticateAsync(cfg.Email, cfg.EmailPassword);
+            }
+            catch (Exception authEx) when (
+                authEx.Message.Contains("Application-specific password", StringComparison.OrdinalIgnoreCase) ||
+                authEx.Message.Contains("app password", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception(
+                    "Gmail requires an App Password for IMAP access.\n\n" +
+                    "Steps to fix:\n" +
+                    "1. Go to myaccount.google.com/security\n" +
+                    "2. Under \"How you sign in to Google\", enable 2-Step Verification\n" +
+                    "3. Search for \"App passwords\" in your Google Account settings\n" +
+                    "4. Create an App Password for \"Mail\"\n" +
+                    "5. Paste the generated 16-character code into the Password field here");
+            }
 
             var inbox = client.Inbox;
             await inbox.OpenAsync(MailKit.FolderAccess.ReadOnly);
