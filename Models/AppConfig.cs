@@ -14,6 +14,13 @@ namespace LocalAIAgent.Models
         public int SmtpPort { get; set; } = 587;
         public bool UseSmtpSsl { get; set; } = true;
 
+        // ── Gmail OAuth2 ──────────────────────────────────────────
+        // When true, opens Google browser sign-in (supports MFA/passkeys).
+        // Requires a Google Cloud project with the Gmail API enabled.
+        public bool UseGmailOAuth { get; set; } = false;
+        public string GmailOAuthClientId { get; set; } = "";
+        public string GmailOAuthClientSecret { get; set; } = "";
+
         // ── Email Behavior ────────────────────────────────────────
         public int MaxEmailCount { get; set; } = 10;
         public bool AutoCheckEmailOnStart { get; set; } = false;

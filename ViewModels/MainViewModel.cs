@@ -53,6 +53,7 @@ namespace LocalAIAgent.ViewModels
             ClearLogCommand           = new RelayCommand(() => LogText = "");
             CopyLogCommand            = new RelayCommand(() => Clipboard.SetText(LogText));
             BrowseReportsFolderCommand = new RelayCommand(BrowseReportsFolder);
+            RevokeGmailOAuthCommand    = new RelayCommand(async () => await RevokeGmailOAuthAsync());
 
             StartTimers();
 
@@ -147,6 +148,26 @@ namespace LocalAIAgent.ViewModels
         {
             get => _config.Config.EmailPassword;
             set { _config.Config.EmailPassword = value; OnPropertyChanged(); }
+        }
+
+        // ── Gmail OAuth2 ──────────────────────────────────────────
+
+        public bool UseGmailOAuth
+        {
+            get => _config.Config.UseGmailOAuth;
+            set { _config.Config.UseGmailOAuth = value; OnPropertyChanged(); }
+        }
+
+        public string GmailOAuthClientId
+        {
+            get => _config.Config.GmailOAuthClientId;
+            set { _config.Config.GmailOAuthClientId = value; OnPropertyChanged(); }
+        }
+
+        public string GmailOAuthClientSecret
+        {
+            get => _config.Config.GmailOAuthClientSecret;
+            set { _config.Config.GmailOAuthClientSecret = value; OnPropertyChanged(); }
         }
 
         public string ImapServer
@@ -352,6 +373,7 @@ namespace LocalAIAgent.ViewModels
         public RelayCommand ClearLogCommand { get; }
         public RelayCommand CopyLogCommand { get; }
         public RelayCommand BrowseReportsFolderCommand { get; }
+        public RelayCommand RevokeGmailOAuthCommand { get; }
 
         // ── Command Implementations ───────────────────────────────
 
